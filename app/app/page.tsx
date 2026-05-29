@@ -1,6 +1,7 @@
 'use client';
 
 import dynamic from 'next/dynamic';
+import { RevealProvider } from '@/hooks/use-reveal';
 
 /* ─── Animated loading splash ───────────────────────────────── */
 function LoadingScreen() {
@@ -71,5 +72,9 @@ const CostixCalculator = dynamic(
 );
 
 export default function AppPage() {
-  return <CostixCalculator />;
+  return (
+    <RevealProvider>
+      <CostixCalculator />
+    </RevealProvider>
+  );
 }
