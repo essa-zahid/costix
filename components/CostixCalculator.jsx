@@ -1,5 +1,7 @@
 "use client";
 import React, { useState, useEffect, useMemo, useRef } from "react";
+import { useReveal } from "@/hooks/use-reveal";
+import RevealGate from "@/components/RevealGate";
 import { motion, AnimatePresence } from "framer-motion";
 import * as XLSX from "xlsx";
 import {
@@ -4999,6 +5001,12 @@ function QuickCost({ currency }) {
     };
   }, [materialTotal, laborTotal, electricityTotal, rentTotal, packagingTotal, otherTotal, machineTotal, form]);
 
+  // Reveal-credit gating: re-blur protected values whenever the costing snapshot changes.
+  const revealCtx = useReveal();
+  useEffect(() => {
+    revealCtx.reportSignature("quick:" + [r.total, r.cpu, r.price, r.profit, r.realizedMargin].join("|"));
+  }, [r.total, r.cpu, r.price, r.profit, r.realizedMargin]);
+
   // Smart insights — returns {tone, key, params} objects.
   // Translation happens at render time via resolveInsightText() so `t` is NOT
   // a dependency here. Language switches therefore never cause a totals desync.
@@ -7265,6 +7273,7 @@ function QuickCost({ currency }) {
               })()}
             </div>
 
+            <RevealGate dark>
             <div className="mt-3 mb-1 text-[11.5px] text-teal-100">{t("summary.suggestedPrice")}</div>
             <div className="text-[40px] sm:text-[42px] font-semibold tracking-tight tabular-nums num-ltr leading-none">
               {r.isValid
@@ -7303,6 +7312,7 @@ function QuickCost({ currency }) {
                 </div>
               </div>
             </div>
+            </RevealGate>
           </div>
         </div>
 
@@ -7507,10 +7517,12 @@ function QuickCost({ currency }) {
                     <ResultRow label={catLabel("Machines")} value={machineTotal} prefix={currency.symbol} decimals={2} currency={currency} muted />
                   )}
                   <ResultRow label={t("summary.totalCost")} value={r.total} prefix={currency.symbol} decimals={2} currency={currency} />
+                  <RevealGate compact>
                   <ResultRow label={t("summary.costPerUnit")} value={r.cpu} prefix={currency.symbol} decimals={2} currency={currency} />
                   <ResultRow label={t("summary.profitPerUnit")} value={r.profitPerUnit} prefix={currency.symbol} decimals={2} currency={currency} muted />
                   <ResultRow label={t("summary.totalProfit")} value={r.profit} prefix={currency.symbol} decimals={0} currency={currency} />
                   <ResultRow label={t("summary.margin")} value={r.realizedMargin} decimals={1} />
+                  </RevealGate>
 
                   {insights.length > 0 && (
                     <div className="pt-3 mt-2 border-t border-slate-100">
@@ -7707,6 +7719,12 @@ function Batch({ currency, onSendToQuickCost }) {
     const profitPerUnit = price - cpu;
     return { total, cpu, price, profit, realizedMargin, profitPerUnit, units };
   }, [materialTotal, laborTotal, electricityTotal, rentTotal, packagingTotal, machineTotal, form]);
+
+  // Reveal-credit gating (Batch) — re-blur on costing-snapshot change.
+  const revealCtxB = useReveal();
+  useEffect(() => {
+    revealCtxB.reportSignature("batch:" + [r.total, r.cpu, r.price, r.profit, r.realizedMargin].join("|"));
+  }, [r.total, r.cpu, r.price, r.profit, r.realizedMargin]);
 
   // Insights — returns {tone, key, params}; translation via resolveInsightText at render
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -8329,6 +8347,7 @@ function Batch({ currency, onSendToQuickCost }) {
                         </span>
                       )}
                     </div>
+                    <RevealGate dark>
                     <div className="text-[36px] sm:text-[40px] font-semibold tracking-tight tabular-nums num-ltr leading-none mt-2">
                       <AnimatedNumber value={r.price} prefix={currency.symbol} decimals={2} currency={currency} />
                     </div>
@@ -8351,6 +8370,7 @@ function Batch({ currency, onSendToQuickCost }) {
                         <div className="text-[15px] font-semibold tabular-nums num-ltr mt-0.5"><AnimatedNumber value={r.realizedMargin} decimals={1} />%</div>
                       </div>
                     </div>
+                    </RevealGate>
                   </div>
                 </div>
 
@@ -8587,6 +8607,12 @@ function Monthly({ currency }) {
     return { profit, margin, avgCost, breakEvenUnits, profitable: profit >= 0 };
   }, [d]);
 
+  // Reveal-credit gating (Monthly) — re-blur on costing-snapshot change.
+  const revealCtxM = useReveal();
+  useEffect(() => {
+    revealCtxM.reportSignature("monthly:" + [r.profit, r.margin, r.avgCost, r.breakEvenUnits].join("|"));
+  }, [r.profit, r.margin, r.avgCost, r.breakEvenUnits]);
+
   return (
     <motion.div initial={{ opacity: 0, y: 12 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }} className="grid md:grid-cols-2 gap-5 md:gap-6 max-w-4xl mx-auto">
       <div className="bg-white rounded-3xl p-6 sm:p-7 border border-slate-100">
@@ -8603,12 +8629,14 @@ function Monthly({ currency }) {
           <div className="absolute -right-12 -top-12 w-48 h-48 rounded-full bg-white/10 blur-2xl" />
           <div className="relative">
             <div className="text-[12.5px] text-teal-100 font-medium">{r.profitable ? t("monthly.netProfit") : t("monthly.netLoss")}</div>
+            <RevealGate dark>
             <div className="mt-2 text-[40px] sm:text-[44px] font-semibold tracking-tight tabular-nums num-ltr leading-none">
               <AnimatedNumber value={Math.abs(r.profit)} prefix={currency.symbol} decimals={0} currency={currency} />
             </div>
             <div className="text-[12.5px] text-teal-100 mt-2">
               <AnimatedNumber value={r.margin} decimals={1} />% {t("monthly.marginSuffix")}
             </div>
+            </RevealGate>
           </div>
         </div>
         <div className="rounded-2xl p-5 sm:p-6 border border-slate-100/60">
