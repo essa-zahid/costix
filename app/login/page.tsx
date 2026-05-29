@@ -99,7 +99,12 @@ function LoginForm() {
           </motion.div>
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.34 }}>
-            <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Password</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-[13px] font-medium text-slate-700">Password</label>
+              <Link href="/forgot-password" className="text-[12.5px] font-medium text-teal-700 hover:underline underline-offset-2">
+                Forgot password?
+              </Link>
+            </div>
             <input type="password" placeholder="••••••••" required autoComplete="current-password"
               className={fieldClass} value={password} onChange={e => setPassword(e.target.value)} />
           </motion.div>
