@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Menu, X } from 'lucide-react';
+import { useCtaTarget } from '@/components/use-cta';
 
 const SPRING_UI = { type: 'spring', stiffness: 400, damping: 34 } as const;
 
@@ -65,6 +66,7 @@ export function GradDivider() {
 /* ─── Shared Navbar ───────────────────────────────────────────── */
 export function SiteNavbar() {
   const [open, setOpen] = React.useState(false);
+  const cta = useCtaTarget();
 
   const NAV_LINKS = [
     { label: 'Features', href: '/#features' },
@@ -101,14 +103,14 @@ export function SiteNavbar() {
             </Link>
             <motion.div whileHover={{ scale: 1.025 }} whileTap={{ scale: 0.965 }} transition={SPRING_UI}>
               <Link
-                href="/app"
+                href={cta.href}
                 className="h-9 px-4 inline-flex items-center justify-center rounded-[9px] text-white text-[13px] font-semibold"
                 style={{
                   background: 'linear-gradient(135deg, #10B981, #0F766E)',
                   boxShadow: '0 1px 2px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.12)',
                 }}
               >
-                Open Calculator
+                {cta.label}
               </Link>
             </motion.div>
           </div>
@@ -146,11 +148,11 @@ export function SiteNavbar() {
             Log in
           </Link>
           <Link
-            href="/app"
+            href={cta.href}
             className="mt-1 w-full min-h-[48px] inline-flex items-center justify-center rounded-xl text-white text-[14px] font-semibold"
             style={{ background: 'linear-gradient(135deg, #10B981, #0F766E)' }}
           >
-            Open Calculator
+            {cta.label}
           </Link>
         </div>
       )}
@@ -160,10 +162,11 @@ export function SiteNavbar() {
 
 /* ─── Shared Footer ───────────────────────────────────────────── */
 export function SiteFooter() {
+  const cta = useCtaTarget();
   const PRODUCT_LINKS = [
     { label: 'Features',        href: '/#features' },
     { label: 'Pricing',         href: '/#pricing'  },
-    { label: 'Open Calculator', href: '/app'       },
+    { label: cta.label, href: cta.href },
     { label: 'FAQ',             href: '/faq'       },
   ];
   const COMPANY_LINKS = [
