@@ -810,7 +810,7 @@ export default function Home() {
                       boxShadow: '0 2px 8px rgba(15,118,110,0.32), inset 0 1px 0 rgba(255,255,255,0.13)',
                     }}
                   >
-                    {cta.label} <ArrowRight size={15} />
+                    Start Calculating <ArrowRight size={15} />
                   </Link>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.018 }} whileTap={{ scale: 0.97 }} transition={SPRING_UI}>
@@ -992,7 +992,7 @@ export default function Home() {
                     boxShadow: '0 2px 8px rgba(15,118,110,0.28)',
                   }}
                 >
-                  {cta.label} <ArrowRight size={14} />
+                  Try it now <ArrowRight size={14} />
                 </Link>
               </motion.div>
             </FadeIn>
@@ -1033,7 +1033,7 @@ export default function Home() {
                       boxShadow: '0 3px 12px rgba(15,118,110,0.36), inset 0 1px 0 rgba(255,255,255,0.13)',
                     }}
                   >
-                    {cta.label} <ArrowRight size={15} />
+                    Start Calculating <ArrowRight size={15} />
                   </Link>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.018 }} whileTap={{ scale: 0.97 }} transition={SPRING_UI}>
@@ -1071,7 +1071,7 @@ export default function Home() {
                 {[
                   { label: 'Features',        href: '#features' },
                   { label: 'Pricing',         href: '#pricing'  },
-                  { label: cta.label, href: cta.href },
+                  { label: 'Open Calculator', href: cta.href },
                   { label: 'FAQ',             href: '/faq'      },
                 ].map(({ label, href }) => (
                   <li key={label}>
