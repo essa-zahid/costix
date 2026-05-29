@@ -166,7 +166,7 @@ export function SiteFooter() {
   const PRODUCT_LINKS = [
     { label: 'Features',        href: '/#features' },
     { label: 'Pricing',         href: '/#pricing'  },
-    { label: cta.label, href: cta.href },
+    { label: 'Open Calculator', href: cta.href },
     { label: 'FAQ',             href: '/faq'       },
   ];
   const COMPANY_LINKS = [
