@@ -26,6 +26,6 @@ export function useCtaTarget() {
     /** Destination for a primary "enter the product" CTA. */
     href: authed ? '/app' : '/signup',
     /** SaaS-oriented label for a primary CTA. */
-    label: authed ? 'Continue to Calculator' : 'Get Started',
+    label: authed ? 'Continue to Calculator' : 'Sign Up',
   };
 }
