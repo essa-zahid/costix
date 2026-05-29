@@ -18,6 +18,7 @@ import {
   ArrowRight,
   ScanLine,
 } from 'lucide-react';
+import { useCtaTarget } from '@/components/use-cta';
 
 /* ─── Shared spring presets ───────────────────────────────────── */
 const SPRING    = { type: 'spring', stiffness: 280, damping: 26 } as const;
@@ -130,6 +131,7 @@ const Logo = () => (
 /* ─── Navbar ──────────────────────────────────────────────────── */
 const Navbar = () => {
   const [open, setOpen] = React.useState(false);
+  const cta = useCtaTarget();
   return (
     <motion.nav
       aria-label="Main navigation"
@@ -156,14 +158,14 @@ const Navbar = () => {
             </Link>
             <motion.div whileHover={{ scale: 1.025 }} whileTap={{ scale: 0.965 }} transition={SPRING_UI}>
               <Link
-                href="/app"
+                href={cta.href}
                 className="h-9 px-4 inline-flex items-center justify-center rounded-[9px] text-white text-[13px] font-semibold"
                 style={{
                   background: 'linear-gradient(135deg, #10B981, #0F766E)',
                   boxShadow: '0 1px 2px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.12)',
                 }}
               >
-                Open Calculator
+                {cta.label}
               </Link>
             </motion.div>
           </div>
@@ -193,11 +195,11 @@ const Navbar = () => {
           <div className="h-px w-full bg-slate-100 my-1" />
           <Link href="/login" className="min-h-[44px] flex items-center text-[14px] font-medium text-slate-700">Log in</Link>
           <Link
-            href="/app"
+            href={cta.href}
             className="mt-1 w-full min-h-[48px] inline-flex items-center justify-center rounded-xl text-white text-[14px] font-semibold"
             style={{ background: 'linear-gradient(135deg, #10B981, #0F766E)' }}
           >
-            Open Calculator
+            {cta.label}
           </Link>
         </motion.div>
       )}
@@ -522,6 +524,7 @@ const ADV_EXTRAS = [
 
 /* ─── Pricing Section ─────────────────────────────────────────── */
 function PricingSection() {
+  const cta = useCtaTarget();
   const [yearly, setYearly] = React.useState(true);
 
   const plans = [
@@ -640,7 +643,7 @@ function PricingSection() {
                     className="mb-7"
                   >
                     <Link
-                      href="/signup"
+                      href={cta.href}
                       className={`w-full h-10 rounded-xl text-[13.5px] font-semibold inline-flex items-center justify-center gap-2 transition-colors ${
                         plan.highlighted
                           ? 'text-white hover:opacity-90'
@@ -709,6 +712,7 @@ function PricingSection() {
 
 /* ─── Page ────────────────────────────────────────────────────── */
 export default function Home() {
+  const cta = useCtaTarget();
   const heroContainer = {
     hidden: {},
     show: { transition: { staggerChildren: 0.08, delayChildren: 0.14 } },
@@ -799,14 +803,14 @@ export default function Home() {
               <motion.div variants={heroItem} className="flex flex-col sm:flex-row gap-3">
                 <motion.div whileHover={{ scale: 1.022 }} whileTap={{ scale: 0.966 }} transition={SPRING_UI}>
                   <Link
-                    href="/app"
+                    href={cta.href}
                     className="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-xl text-white font-semibold text-[14px]"
                     style={{
                       background: 'linear-gradient(135deg, #10B981, #0F766E)',
                       boxShadow: '0 2px 8px rgba(15,118,110,0.32), inset 0 1px 0 rgba(255,255,255,0.13)',
                     }}
                   >
-                    Start Calculating <ArrowRight size={15} />
+                    {cta.label} <ArrowRight size={15} />
                   </Link>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.018 }} whileTap={{ scale: 0.97 }} transition={SPRING_UI}>
@@ -981,14 +985,14 @@ export default function Home() {
               </ul>
               <motion.div whileHover={{ scale: 1.022 }} whileTap={{ scale: 0.966 }} transition={SPRING_UI} className="inline-block">
                 <Link
-                  href="/app"
+                  href={cta.href}
                   className="h-10 px-5 inline-flex items-center gap-2 rounded-xl text-white font-semibold text-[13.5px]"
                   style={{
                     background: 'linear-gradient(135deg, #10B981, #0F766E)',
                     boxShadow: '0 2px 8px rgba(15,118,110,0.28)',
                   }}
                 >
-                  Try it now <ArrowRight size={14} />
+                  {cta.label} <ArrowRight size={14} />
                 </Link>
               </motion.div>
             </FadeIn>
@@ -1022,14 +1026,14 @@ export default function Home() {
               <div className="flex flex-col sm:flex-row gap-3">
                 <motion.div whileHover={{ scale: 1.022 }} whileTap={{ scale: 0.966 }} transition={SPRING_UI}>
                   <Link
-                    href="/app"
+                    href={cta.href}
                     className="h-11 px-6 inline-flex items-center justify-center gap-2 rounded-xl text-white font-semibold text-[14px]"
                     style={{
                       background: 'linear-gradient(135deg, #10B981, #0F766E)',
                       boxShadow: '0 3px 12px rgba(15,118,110,0.36), inset 0 1px 0 rgba(255,255,255,0.13)',
                     }}
                   >
-                    Start Calculating <ArrowRight size={15} />
+                    {cta.label} <ArrowRight size={15} />
                   </Link>
                 </motion.div>
                 <motion.div whileHover={{ scale: 1.018 }} whileTap={{ scale: 0.97 }} transition={SPRING_UI}>
@@ -1067,7 +1071,7 @@ export default function Home() {
                 {[
                   { label: 'Features',        href: '#features' },
                   { label: 'Pricing',         href: '#pricing'  },
-                  { label: 'Open Calculator', href: '/app'      },
+                  { label: cta.label, href: cta.href },
                   { label: 'FAQ',             href: '/faq'      },
                 ].map(({ label, href }) => (
                   <li key={label}>
