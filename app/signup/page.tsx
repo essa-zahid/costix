@@ -46,17 +46,25 @@ export default function SignupPage() {
   const [loading, setLoading]   = React.useState(false);
   const [error, setError]       = React.useState('');
   const [done, setDone]         = React.useState(false);
+  const [existing, setExisting] = React.useState(false);
 
   const fieldClass = 'w-full h-11 px-3.5 rounded-xl border border-slate-200 bg-white text-sm text-slate-900 placeholder:text-slate-400 outline-none focus:ring-2 focus:ring-teal-500/30 focus:border-teal-400 transition-shadow';
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    setExisting(false);
     if (password.length < 8) { setError('Password must be at least 8 characters.'); return; }
     setLoading(true);
-    const { error } = await signUp(email, password, fullName);
+    const { error, alreadyRegistered } = await signUp(email, password, fullName);
     setLoading(false);
-    if (error) { setError(error.message); } else { setDone(true); }
+    if (error) {
+      setError(error.message);
+    } else if (alreadyRegistered) {
+      setExisting(true);
+    } else {
+      setDone(true);
+    }
   }
 
   if (done) {
@@ -107,6 +115,15 @@ export default function SignupPage() {
           {error && (
             <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-red-50 border border-red-200 text-[13px] text-red-700">
               {error}
+            </div>
+          )}
+
+          {existing && (
+            <div className="mb-4 px-3.5 py-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[13px] text-amber-800">
+              This email already has an account.{' '}
+              <Link href="/login" className="font-semibold underline underline-offset-2">Log in instead</Link>
+              {' '}or{' '}
+              <Link href="/forgot-password" className="font-semibold underline underline-offset-2">reset your password</Link>.
             </div>
           )}
 
