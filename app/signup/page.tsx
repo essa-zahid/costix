@@ -142,7 +142,20 @@ export default function SignupPage() {
 
           <motion.p className="mt-5 text-[11.5px] text-slate-400 text-center leading-relaxed"
             initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.52 }}>
-            By signing up you agree to our{' '}
+            By signing up you agree to our{'  '}
             <Link href="/terms" className="text-teal-700 hover:underline underline-offset-2">Terms</Link>
             {' '}and{' '}
-     
+            <Link href="/privacy" className="text-teal-700 hover:underline underline-offset-2">Privacy Policy</Link>.
+          </motion.p>
+        </motion.div>
+
+        <motion.div className="mt-6 text-center" initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.55 }}>
+          <p className="text-sm text-slate-500">
+            Already have an account?{'  '}
+            <Link href="/login" className="font-medium text-teal-700 hover:underline underline-offset-2">Log in</Link>
+          </p>
+        </motion.div>
+      </div>
+    </div>
+  );
+}
