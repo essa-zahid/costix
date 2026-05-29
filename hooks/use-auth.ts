@@ -50,6 +50,34 @@ export async function signUp(email: string, password: string, fullName: string) 
       emailRedirectTo: `${location.origin}/auth/callback`,
     },
   });
+
+  // Supabase deliberately does NOT return an error when the email already
+  // exists (to avoid leaking which addresses are registered). Instead it
+  // returns a user object with an empty `identities` array and sends no
+  // email. Detect that here so the UI can tell the user to log in instead
+  // of showing a misleading "check your email" screen.
+  const alreadyRegistered =
+    !error &&
+    !!data?.user &&
+    Array.isArray(data.user.identities) &&
+    data.user.identities.length === 0;
+
+  return { data, error, alreadyRegistered };
+}
+
+export async function resetPasswordForEmail(email: string) {
+  const supabase = createClient();
+  // The recovery link lands on /auth/callback, which exchanges the code for
+  // a session and forwards the user to /reset-password to set a new password.
+  const { data, error } = await supabase.auth.resetPasswordForEmail(email, {
+    redirectTo: `${location.origin}/auth/callback?next=/reset-password`,
+  });
+  return { data, error };
+}
+
+export async function updatePassword(password: string) {
+  const supabase = createClient();
+  const { data, error } = await supabase.auth.updateUser({ password });
   return { data, error };
 }
 
