@@ -100,7 +100,7 @@ function LoginForm() {
 
           <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ ...SPRING, delay: 0.34 }}>
             <label className="block text-[13px] font-medium text-slate-700 mb-1.5">Password</label>
-            <input type="password" placeholder="\u2022\u2022\u2022\u2022\u2022\u2022\u2022\u2022" required autoComplete="current-password"
+            <input type="password" placeholder="••••••••" required autoComplete="current-password"
               className={fieldClass} value={password} onChange={e => setPassword(e.target.value)} />
           </motion.div>
 
@@ -110,7 +110,7 @@ function LoginForm() {
               style={{ background: 'linear-gradient(135deg, #10B981, #0F766E)', boxShadow: '0 2px 8px rgba(15,118,110,0.3)' }}
               whileHover={!loading ? { scale: 1.018 } : {}} whileTap={!loading ? { scale: 0.968 } : {}}
               transition={SPRING_UI}>
-              {loading ? 'Logging in\u2026' : 'Log In'}
+              {loading ? 'Logging in…' : 'Log In'}
             </motion.button>
           </motion.div>
         </form>
