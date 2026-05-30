@@ -3,7 +3,7 @@
 import React from 'react';
 import { useRouter } from 'next/navigation';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Lock, Layers, Bookmark, Sparkles, X, Check } from 'lucide-react';
+import { Lock, Layers, Bookmark, Sparkles, X, Check, Languages, Globe } from 'lucide-react';
 import { useReveal, type AdvancedFeature } from '@/hooks/use-reveal';
 
 const SPRING = { type: 'spring', stiffness: 320, damping: 30 } as const;
@@ -39,6 +39,42 @@ const FEATURES: Record<AdvancedFeature, {
     ],
     tier: 'Pro',
     planNote: 'Saved Costings is included on Pro, with unlimited history on Advanced.',
+  },
+  language: {
+    icon: Languages,
+    title: 'Multi-language',
+    tagline: 'Run Costix in your team\'s language — 8 languages, switch any time.',
+    points: [
+      'English, Roman Urdu/Hindi, Arabic, Chinese, and more',
+      'Right-to-left support for Arabic',
+      'Pro is English-only; Advanced unlocks every language',
+    ],
+    tier: 'Advanced',
+    planNote: 'Multi-language is part of the Advanced plan.',
+  },
+  currency: {
+    icon: Globe,
+    title: 'Multi-currency',
+    tagline: 'Cost and price across currencies in one workspace.',
+    points: [
+      'Switch between 30+ currencies any time',
+      'Each costing keeps its own currency',
+      'Pro is single-currency; Advanced unlocks switching',
+    ],
+    tier: 'Advanced',
+    planNote: 'Multi-currency is part of the Advanced plan.',
+  },
+  savedLimit: {
+    icon: Bookmark,
+    title: 'Unlimited saved costings',
+    tagline: 'You\'ve reached the 5-costing limit on Pro.',
+    points: [
+      'Save unlimited costings on Advanced',
+      'Keep full history, templates, and snapshots',
+      'Never delete an old costing to make room again',
+    ],
+    tier: 'Advanced',
+    planNote: 'Unlimited saved costings is part of the Advanced plan.',
   },
 };
 
