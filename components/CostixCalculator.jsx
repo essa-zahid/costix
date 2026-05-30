@@ -43,6 +43,7 @@ import {
   Pencil,
   Trash2,
   BookmarkPlus,
+  Lock,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────
@@ -3911,10 +3912,12 @@ function ResultRow({ label, value, decimals = 0, prefix = "", muted, currency })
 // ─────────────────────────────────────────────────────────────
 function TabBar({ tab, setTab }) {
   const t = useT();
+  // Centralized plan gating — Batch + Saved are Advanced (paid) features.
+  const { canUseAdvanced, loading: planLoading, openUpgrade } = useReveal();
   const tabs = [
-    { id: "quick", label: t("tab.quickCost"), icon: Calculator },
-    { id: "batch", label: t("tab.batch"), icon: Layers },
-    { id: "saved", label: t("tab.saved"), icon: Bookmark },
+    { id: "quick", label: t("tab.quickCost"), icon: Calculator, advanced: false },
+    { id: "batch", label: t("tab.batch"), icon: Layers, advanced: true },
+    { id: "saved", label: t("tab.saved"), icon: Bookmark, advanced: true },
     // Monthly hidden from MVP — financially misleading until rebuilt properly
     // { id: "monthly", label: t("tab.monthly"), icon: TrendingUp },
   ];
@@ -3924,11 +3927,16 @@ function TabBar({ tab, setTab }) {
         {tabs.map((tb) => {
           const active = tab === tb.id;
           const Icon = tb.icon;
+          // Locked = an Advanced tab while the viewer has no paid access.
+          // Stays visible + clickable; the click opens the upgrade modal.
+          const locked = tb.advanced && !planLoading && !canUseAdvanced;
           return (
             <button
               key={tb.id}
-              onClick={() => setTab(tb.id)}
-              className="relative px-3 sm:px-5 py-2.5 rounded-xl text-[13px] sm:text-[14px] font-medium transition-colors"
+              onClick={() => (locked ? openUpgrade(tb.id) : setTab(tb.id))}
+              aria-label={locked ? `${tb.label} — Advanced feature, tap to upgrade` : tb.label}
+              title={locked ? `${tb.label} is an Advanced feature` : undefined}
+              className="relative px-3 sm:px-5 py-2.5 rounded-xl text-[13px] sm:text-[14px] font-medium transition-all"
             >
               {active && (
                 <motion.div
@@ -3939,11 +3947,14 @@ function TabBar({ tab, setTab }) {
               )}
               <span
                 className={`relative flex items-center gap-1.5 ${
-                  active ? "text-teal-800" : "text-slate-500"
+                  active ? "text-teal-800" : locked ? "text-slate-400" : "text-slate-500"
                 }`}
               >
                 <Icon size={15} strokeWidth={2.2} />
                 {tb.label}
+                {locked && (
+                  <Lock size={11} strokeWidth={2.5} className="ml-0.5 opacity-80" />
+                )}
               </span>
             </button>
           );
@@ -8796,6 +8807,14 @@ export default function CostixCalculator() {
   // Persist shell preferences — don't save "saved" tab as startup default
   // (users should always land on Quick Cost or Batch on refresh)
   useEffect(() => { if (tab !== "saved") lsSet("costix:tab", tab); }, [tab]);
+
+  // Plan-gate guard: a non-paid viewer must never sit on a locked Advanced tab
+  // (e.g. "batch" persisted from a previous session). Send them back to Quick Cost.
+  const { canUseAdvanced: planAllowsAdvanced, loading: planGateLoading } = useReveal();
+  useEffect(() => {
+    if (planGateLoading) return;
+    if (!planAllowsAdvanced && (tab === "batch" || tab === "saved")) setTab("quick");
+  }, [planAllowsAdvanced, planGateLoading, tab]);
   useEffect(() => { lsSet("costix:currency", currency); }, [currency]);
   useEffect(() => { lsSet("costix:lang", lang); }, [lang]);
 
