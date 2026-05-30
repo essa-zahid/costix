@@ -578,7 +578,7 @@ const ADV_EXTRAS = [
   'Team workspace — multiple users',
   'Shared costings & history',
   'Multi-currency workspace',
-  'Multi-language — 8 languages incl. Urdu/Hindi, Arabic, Chinese, Russian, Spanish, Portuguese, French',
+  'Multi-language support',
   'Priority support',
 ] as const;
 
@@ -621,7 +621,7 @@ function PricingSection() {
               Simple, operational pricing.
             </h2>
             <p className="text-[15px] text-slate-500 leading-relaxed">
-              Start free with Quick Cost. Pro adds saved costings and pro tools; Advanced adds batch costing, team workspaces, and 8 languages.
+              Start free with Quick Cost. Pro adds saved costings and pro tools; Advanced adds batch costing, team workspaces, and multi-currency operations.
             </p>
           </div>
         </FadeIn>
