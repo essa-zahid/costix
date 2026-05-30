@@ -86,9 +86,11 @@ export function RevealProvider({ children }: { children: React.ReactNode }) {
           setPlan(((data as any).plan as PlanType) || 'free');
           setCredits(typeof data.free_credits_remaining === 'number' ? data.free_credits_remaining : 0);
         } else {
-          // Row not created yet (trigger lag) — assume fresh free allowance.
+          // Row not created yet (trigger lag): leave credits unresolved rather
+          // than fabricating a default. The atomic RPC is the source of truth
+          // on consume, and the UI shows a loading state until this resolves.
           setPlan('free');
-          setCredits(5);
+          setCredits(null);
         }
         setProfileLoading(false);
       });
