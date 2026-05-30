@@ -13,6 +13,8 @@ const FEATURES: Record<AdvancedFeature, {
   title: string;
   tagline: string;
   points: string[];
+  tier: string;     // plan where this feature first becomes available
+  planNote: string; // plan-availability line shown in the modal body
 }> = {
   batch: {
     icon: Layers,
@@ -23,6 +25,8 @@ const FEATURES: Record<AdvancedFeature, {
       'Compare runs and scale pricing across volumes',
       'Built for real factory output, not one-offs',
     ],
+    tier: 'Advanced',
+    planNote: 'Batch Costing is part of the Advanced plan.',
   },
   saved: {
     icon: Bookmark,
@@ -33,6 +37,8 @@ const FEATURES: Record<AdvancedFeature, {
       'Build a reusable library of your products',
       'Duplicate and update instead of starting over',
     ],
+    tier: 'Pro',
+    planNote: 'Saved Costings is included on Pro, with unlimited history on Advanced.',
   },
 };
 
@@ -89,7 +95,7 @@ export default function UpgradeModal() {
                 <X size={16} />
               </button>
               <span className="inline-flex items-center gap-1.5 rounded-full bg-white/15 px-2.5 py-1 text-[11px] font-semibold tracking-wide uppercase">
-                <Sparkles size={12} /> Advanced
+                <Sparkles size={12} /> {feature.tier}
               </span>
               <div className="mt-4 flex items-center gap-3">
                 <span className="h-11 w-11 inline-flex items-center justify-center rounded-2xl bg-white/15">
@@ -114,8 +120,7 @@ export default function UpgradeModal() {
               </ul>
 
               <div className="mt-5 rounded-xl bg-slate-50 border border-slate-100 px-3.5 py-3 text-[12.5px] text-slate-500">
-                {feature.title} is part of the <span className="font-semibold text-slate-700">Advanced</span> plan.
-                Quick Cost stays free, always.
+                {feature.planNote} Quick Cost stays free, always.
               </div>
 
               <div className="mt-5 flex flex-col gap-2">
@@ -123,7 +128,7 @@ export default function UpgradeModal() {
                   className="w-full h-11 rounded-xl text-white text-sm font-semibold"
                   style={{ background: 'linear-gradient(135deg, #10B981, #0F766E)', boxShadow: '0 2px 10px rgba(15,118,110,0.3)' }}
                   whileHover={{ scale: 1.015 }} whileTap={{ scale: 0.97 }} transition={SPRING}>
-                  {authed ? 'Upgrade to Advanced' : 'Create a free account'}
+                  {authed ? `Upgrade to ${feature.tier}` : 'Create a free account'}
                 </motion.button>
                 <button onClick={closeUpgrade}
                   className="w-full h-10 rounded-xl text-[13.5px] font-medium text-slate-500 hover:text-slate-700 transition-colors">
