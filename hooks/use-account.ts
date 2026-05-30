@@ -53,8 +53,10 @@ export function useAccount(): AccountState {
           setPlan(((data as any).plan as PlanType) || 'free');
           setCredits(typeof (data as any).free_credits_remaining === 'number' ? (data as any).free_credits_remaining : 0);
         } else {
+          // No row yet (e.g. signup trigger lag): leave credits unresolved so
+          // the UI shows a loading state -- never a fabricated default value.
           setPlan('free');
-          setCredits(5);
+          setCredits(null);
         }
         setProfileLoading(false);
       });
