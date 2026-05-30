@@ -51,10 +51,6 @@ export default function AccountMenu({ account }: { account: AccountState }) {
     router.refresh();
   };
 
-  const creditsText = account.unlimited
-    ? 'Unlimited'
-    : account.credits === null ? '-' : `${account.credits}`;
-
   const itemClass = 'flex items-center gap-2.5 w-full px-3 py-2 rounded-lg text-[13.5px] text-slate-600 hover:bg-slate-50 hover:text-slate-900 transition-colors';
 
   return (
@@ -96,7 +92,13 @@ export default function AccountMenu({ account }: { account: AccountState }) {
                 <Sparkles size={13} /> {account.planLabel} plan
               </span>
               <span className="text-[12px] text-slate-500">
-                <span className="font-semibold text-slate-700">{creditsText}</span> {account.unlimited ? 'reveals' : 'credits'}
+                {account.unlimited ? (
+                  <><span className="font-semibold text-slate-700">Unlimited</span> reveals</>
+                ) : account.credits === null ? (
+                  <span className="inline-block h-3 w-12 rounded bg-slate-200 animate-pulse align-middle" aria-label="Loading credits" />
+                ) : (
+                  <><span className="font-semibold text-slate-700">{account.credits}</span> credits</>
+                )}
               </span>
             </div>
 
