@@ -558,18 +558,19 @@ const LiveCalcPreview = () => {
 
 /* ─── Pricing feature lists ───────────────────────────────────── */
 const PRO_FEATURES = [
-  'Quick Costing & Batch Costing',
-  'Machine Depreciation',
-  'Imported Material Costing',
-  'What-if Analysis',
-  'PDF & XLSX Export',
+  'Quick Cost calculator',
+  'Unlimited reveals',
   'Up to 5 saved costings',
-  'English & Urdu/Hindi',
+  'Machine depreciation',
+  'Imported material costing',
+  'What-if analysis',
+  'PDF & XLSX export',
 ] as const;
 
-const PRO_LIMITS = ['1 user · 1 workspace', 'Single currency'] as const;
+const PRO_LIMITS = ['1 user · 1 workspace', 'Single currency', 'English only'] as const;
 
 const ADV_EXTRAS = [
+  'Batch costing',
   'Unlimited saved costings',
   'Costing history & snapshots',
   'Duplicate & re-cost products',
@@ -577,7 +578,7 @@ const ADV_EXTRAS = [
   'Team workspace — multiple users',
   'Shared costings & history',
   'Multi-currency workspace',
-  'Arabic, Chinese, Russian, Spanish, Portuguese, French',
+  'Multi-language — 8 languages incl. Urdu/Hindi, Arabic, Chinese, Russian, Spanish, Portuguese, French',
   'Priority support',
 ] as const;
 
@@ -589,7 +590,7 @@ function PricingSection() {
   const plans = [
     {
       name: 'Pro',
-      tagline: 'For solo manufacturers and small production businesses.',
+      tagline: 'For solo manufacturers running a single, simple operation.',
       priceMonthly: 29,
       priceYearly: 24,
       cta: 'Start Costing',
@@ -599,7 +600,7 @@ function PricingSection() {
     },
     {
       name: 'Advanced',
-      tagline: 'For businesses managing costing across products and teams.',
+      tagline: 'For growing manufacturers managing costing across products, currencies, and teams.',
       priceMonthly: 59,
       priceYearly: 49,
       cta: 'Use Costix',
@@ -620,7 +621,7 @@ function PricingSection() {
               Simple, operational pricing.
             </h2>
             <p className="text-[15px] text-slate-500 leading-relaxed">
-              No per-user fees. No setup costs. Pay for what you need.
+              Start free with Quick Cost. Pro adds saved costings and pro tools; Advanced adds batch costing, team workspaces, and 8 languages.
             </p>
           </div>
         </FadeIn>
