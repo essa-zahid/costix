@@ -2,6 +2,7 @@
 
 import dynamic from 'next/dynamic';
 import { RevealProvider } from '@/hooks/use-reveal';
+import UpgradeModal from '@/components/UpgradeModal';
 
 /* ─── Animated loading splash ───────────────────────────────── */
 function LoadingScreen() {
@@ -75,6 +76,7 @@ export default function AppPage() {
   return (
     <RevealProvider>
       <CostixCalculator />
+      <UpgradeModal />
     </RevealProvider>
   );
 }
