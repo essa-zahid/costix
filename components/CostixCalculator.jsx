@@ -8821,6 +8821,9 @@ export default function CostixCalculator() {
   const langMeta = LANGUAGES.find((l) => l.code === lang) || LANGUAGES[0];
   const isRTL = !!langMeta.rtl;
   const t = useMemo(() => makeTranslator(lang), [lang]);
+  // The context exposes { lang, setLang } (consumers destructure these);
+  // memoized so it is stable across renders that do not change the language.
+  const langCtx = useMemo(() => ({ lang, setLang }), [lang]);
 
   // Load Cairo font when Arabic is active — needed for clean Arabic rendering.
   // Cairo is a high-quality Arabic/Latin dual-script font suitable for manufacturing UX.
@@ -8857,7 +8860,7 @@ export default function CostixCalculator() {
   }, [t]);
 
   return (
-    <LangContext.Provider value={t}>
+    <LangContext.Provider value={langCtx}>
       <div dir={isRTL ? "rtl" : "ltr"} className={`min-h-screen bg-white font-sans ${isRTL ? "text-right" : "text-left"} antialiased`}>
         <style>{`
           [dir="rtl"] input,
