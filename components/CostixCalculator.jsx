@@ -2140,10 +2140,13 @@ function useT() {
 // Language selector — twin of CurrencySelector
 function LanguageSelector() {
   const { lang, setLang } = React.useContext(LangContext);
+  const { canMultiLanguage, loading: planLoading, openUpgrade } = useReveal();
   const t = makeTranslator(lang);
   const [open, setOpen] = useState(false);
   const rootRef = useRef(null);
   const current = LANGUAGES.find((l) => l.code === lang) || LANGUAGES[0];
+  // Multi-language is an Advanced feature; Free/Pro are English-only.
+  const locked = !planLoading && !canMultiLanguage;
 
   useEffect(() => {
     const handler = (e) => {
@@ -2156,13 +2159,15 @@ function LanguageSelector() {
   return (
     <div ref={rootRef} className="relative">
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 pl-2.5 pr-2 py-2 rounded-xl border border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/30 shadow-sm transition text-[13px] font-medium text-slate-800"
-        title={t("ui.selectLanguage")}
+        onClick={() => { if (locked) { openUpgrade("language"); } else { setOpen((o) => !o); } }}
+        className={"flex items-center gap-1.5 pl-2.5 pr-2 py-2 rounded-xl border border-slate-200 bg-white shadow-sm transition text-[13px] font-medium hover:border-teal-300 " + (locked ? "text-slate-400" : "text-slate-800 hover:bg-teal-50/30")}
+        title={locked ? "Multi-language is an Advanced feature" : t("ui.selectLanguage")}
       >
-        <Languages size={13} className="text-teal-700" strokeWidth={2.2} />
+        <Languages size={13} className={locked ? "text-slate-400" : "text-teal-700"} strokeWidth={2.2} />
         <span className="tracking-tight">{current.nativeName}</span>
-        <ChevronDown size={12} className={"text-slate-400 transition-transform " + (open ? "rotate-180" : "")} />
+        {locked
+          ? <Lock size={11} strokeWidth={2.5} className="text-slate-400" />
+          : <ChevronDown size={12} className={"text-slate-400 transition-transform " + (open ? "rotate-180" : "")} />}
       </button>
 
       <AnimatePresence>
@@ -2473,9 +2478,12 @@ function CurrencyWarningModal({ from, to, onConfirm, onCancel }) {
 
 function CurrencySelector({ value, onChange }) {
   const t = useT();
+  const { canMultiCurrency, loading: planLoading, openUpgrade } = useReveal();
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const rootRef = useRef(null);
+  // Multi-currency is an Advanced feature; Free/Pro are single-currency.
+  const locked = !planLoading && !canMultiCurrency;
 
   useEffect(() => {
     const handler = (e) => {
@@ -2502,18 +2510,20 @@ function CurrencySelector({ value, onChange }) {
   return (
     <div ref={rootRef} className="relative">
       <button
-        onClick={() => setOpen((o) => !o)}
-        className="flex items-center gap-1.5 pl-2.5 pr-2 py-2 rounded-xl border border-slate-200 bg-white hover:border-teal-300 hover:bg-teal-50/30 shadow-sm transition text-[13px] font-medium text-slate-800"
-        title={t("ui.selectCurrency")}
+        onClick={() => { if (locked) { openUpgrade("currency"); } else { setOpen((o) => !o); } }}
+        className={"flex items-center gap-1.5 pl-2.5 pr-2 py-2 rounded-xl border border-slate-200 bg-white shadow-sm transition text-[13px] font-medium hover:border-teal-300 " + (locked ? "text-slate-400" : "text-slate-800 hover:bg-teal-50/30")}
+        title={locked ? "Multi-currency is an Advanced feature" : t("ui.selectCurrency")}
       >
         <span className="text-[15px] leading-none">{value.flag}</span>
         <span className="tracking-tight">{value.code}</span>
-        <span className="text-teal-700 font-semibold tabular-nums">{value.symbol}</span>
-        <ChevronDown size={12} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />
+        <span className={(locked ? "text-slate-400" : "text-teal-700") + " font-semibold tabular-nums"}>{value.symbol}</span>
+        {locked
+          ? <Lock size={11} strokeWidth={2.5} className="text-slate-400" />
+          : <ChevronDown size={12} className={`text-slate-400 transition-transform ${open ? "rotate-180" : ""}`} />}
       </button>
 
       <AnimatePresence>
-        {open && (
+        {open && !locked && (
           <motion.div
             initial={{ opacity: 0, y: -4, scale: 0.98 }}
             animate={{ opacity: 1, y: 0, scale: 1 }}
@@ -3913,11 +3923,11 @@ function ResultRow({ label, value, decimals = 0, prefix = "", muted, currency })
 function TabBar({ tab, setTab }) {
   const t = useT();
   // Centralized plan gating — Batch + Saved are Advanced (paid) features.
-  const { canUseAdvanced, loading: planLoading, openUpgrade } = useReveal();
+  const { canBatch, canSavedCostings, loading: planLoading, openUpgrade } = useReveal();
   const tabs = [
-    { id: "quick", label: t("tab.quickCost"), icon: Calculator, advanced: false },
-    { id: "batch", label: t("tab.batch"), icon: Layers, advanced: true },
-    { id: "saved", label: t("tab.saved"), icon: Bookmark, advanced: true },
+    { id: "quick", label: t("tab.quickCost"), icon: Calculator, req: null },
+    { id: "batch", label: t("tab.batch"), icon: Layers, req: "batch" },
+    { id: "saved", label: t("tab.saved"), icon: Bookmark, req: "saved" },
     // Monthly hidden from MVP — financially misleading until rebuilt properly
     // { id: "monthly", label: t("tab.monthly"), icon: TrendingUp },
   ];
@@ -3927,13 +3937,16 @@ function TabBar({ tab, setTab }) {
         {tabs.map((tb) => {
           const active = tab === tb.id;
           const Icon = tb.icon;
-          // Locked = an Advanced tab while the viewer has no paid access.
-          // Stays visible + clickable; the click opens the upgrade modal.
-          const locked = tb.advanced && !planLoading && !canUseAdvanced;
+          // Locked = a tab the viewer's plan can't access (Batch -> Advanced,
+          // Saved -> Pro+). Stays visible + clickable; click opens the upgrade modal.
+          const locked = !planLoading && (
+            (tb.req === "batch" && !canBatch) ||
+            (tb.req === "saved" && !canSavedCostings)
+          );
           return (
             <button
               key={tb.id}
-              onClick={() => (locked ? openUpgrade(tb.id) : setTab(tb.id))}
+              onClick={() => (locked ? openUpgrade(tb.req) : setTab(tb.id))}
               aria-label={locked ? `${tb.label} — Advanced feature, tap to upgrade` : tb.label}
               title={locked ? `${tb.label} is an Advanced feature` : undefined}
               className="relative px-3 sm:px-5 py-2.5 rounded-xl text-[13px] sm:text-[14px] font-medium transition-all"
@@ -5154,6 +5167,21 @@ function QuickCost({ currency }) {
 
   const removeSnapshot = (sid) => {
     setSnapshots((prev) => prev.filter((s) => s.id !== sid));
+  };
+
+  // Plan-aware save gate. Free cannot save (-> Pro); Pro is capped at 5 saved
+  // costings (-> Advanced); Advanced is unlimited. Updating an existing record
+  // never counts against the cap.
+  const requestSave = (action) => {
+    if (!revealCtx.canSavedCostings) { revealCtx.openUpgrade("saved"); return; }
+    const isNewRecord = action === "duplicate" || !loadedTemplate;
+    if (isNewRecord && revealCtx.savedLimit !== Infinity) {
+      let count = 0;
+      try { count = _lsRead("quick").length + _lsRead("batch").length; } catch {}
+      if (count >= revealCtx.savedLimit) { revealCtx.openUpgrade("savedLimit"); return; }
+    }
+    setDuplicateMode(action === "duplicate");
+    setShowSaveModal(true);
   };
 
   // ─────────────────────────────────────────────────────────────
@@ -7345,7 +7373,7 @@ function QuickCost({ currency }) {
             )}
           </AnimatePresence>
           <TemplatesButton
-            onSave={(action) => { setDuplicateMode(action === "duplicate"); setShowSaveModal(true); }}
+            onSave={(action) => requestSave(action)}
             onLoad={() => setShowLoadModal(true)}
             loadedTemplate={loadedTemplate}
             mode="quick"
@@ -7354,7 +7382,7 @@ function QuickCost({ currency }) {
 
         {/* Action bar */}
         <ActionBar
-          onSnapshot={() => { setDuplicateMode(false); setShowSaveModal(true); }}
+          onSnapshot={() => requestSave()}
           onExportPDF={exportPDF}
           onExportXLSX={exportXLSX}
           onShare={shareLink}
@@ -8810,11 +8838,18 @@ export default function CostixCalculator() {
 
   // Plan-gate guard: a non-paid viewer must never sit on a locked Advanced tab
   // (e.g. "batch" persisted from a previous session). Send them back to Quick Cost.
-  const { canUseAdvanced: planAllowsAdvanced, loading: planGateLoading } = useReveal();
+  const { canBatch, canSavedCostings, canMultiLanguage, loading: planGateLoading } = useReveal();
+  // Bounce a viewer off a tab their plan can't access (Batch -> Advanced, Saved -> Pro+).
   useEffect(() => {
     if (planGateLoading) return;
-    if (!planAllowsAdvanced && (tab === "batch" || tab === "saved")) setTab("quick");
-  }, [planAllowsAdvanced, planGateLoading, tab]);
+    if (!canBatch && tab === "batch") setTab("quick");
+    if (!canSavedCostings && tab === "saved") setTab("quick");
+  }, [canBatch, canSavedCostings, planGateLoading, tab]);
+  // Free/Pro are English-only — force English when multi-language isn't unlocked.
+  useEffect(() => {
+    if (planGateLoading) return;
+    if (!canMultiLanguage && lang !== "en") setLang("en");
+  }, [canMultiLanguage, planGateLoading, lang]);
   useEffect(() => { lsSet("costix:currency", currency); }, [currency]);
   useEffect(() => { lsSet("costix:lang", lang); }, [lang]);
 
