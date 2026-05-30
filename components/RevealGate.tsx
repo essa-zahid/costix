@@ -37,7 +37,9 @@ export default function RevealGate({
     ? 'Free — 5 reveals included'
     : outOfCredits
       ? "You've used all your reveals"
-      : `${credits ?? 0} reveal${(credits ?? 0) === 1 ? '' : 's'} left`;
+      : credits === null
+        ? 'Checking your credits...'
+        : `${credits} reveal${credits === 1 ? '' : 's'} left`;
 
   return (
     <div className={`relative ${className}`}>
