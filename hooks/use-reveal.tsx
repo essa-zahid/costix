@@ -26,8 +26,8 @@ import { createClient } from '@/lib/supabase/client';
  * (profiles.plan_type / free_credits_remaining) without touching the UI.
  */
 
-export type PlanType = 'free' | 'pro';
-export type AdvancedFeature = 'batch' | 'saved';
+export type PlanType = 'free' | 'pro' | 'advanced';
+export type AdvancedFeature = 'batch' | 'saved' | 'language' | 'currency' | 'savedLimit';
 export const PENDING_REVEAL_KEY = 'costix_pending_reveal';
 
 interface RevealContextValue {
@@ -41,8 +41,18 @@ interface RevealContextValue {
   outOfCredits: boolean;
   reveal: () => void;
   reportSignature: (sig: string) => void;
-  // Advanced (paid) feature gating — Batch + Saved are paid-only.
-  canUseAdvanced: boolean;                 // true → unrestricted access to Batch/Saved
+  // ── Three-tier plan model (Free / Pro / Advanced) ──────────────
+  isFree: boolean;
+  isPro: boolean;
+  isAdvanced: boolean;
+  // Capability flags derived from the plan — components gate on these,
+  // never on raw plan strings.
+  canSavedCostings: boolean;   // Pro + Advanced can save costings
+  savedLimit: number;          // 0 free · 5 pro · Infinity advanced
+  canBatch: boolean;           // Advanced only
+  canMultiLanguage: boolean;   // Advanced only
+  canMultiCurrency: boolean;   // Advanced only
+  canUseAdvanced: boolean;     // alias for isAdvanced (full Advanced tier)
   upgradeFeature: AdvancedFeature | null;  // which locked feature triggered the upgrade modal
   openUpgrade: (feature: AdvancedFeature) => void;
   closeUpgrade: () => void;
@@ -62,9 +72,17 @@ export function RevealProvider({ children }: { children: React.ReactNode }) {
   const sigRef = useRef<string | null>(null);
 
   const authed = !!user;
-  const unlimited = plan === 'pro';
-  // Any non-free plan unlocks the Advanced (paid) features.
-  const canUseAdvanced = authed && plan !== 'free';
+  const isFree = !authed || plan === 'free';
+  const isPro = authed && plan === 'pro';
+  const isAdvanced = authed && plan === 'advanced';
+  const unlimited = isPro || isAdvanced;          // unlimited reveals on any paid plan
+  // Capability flags — one place, used everywhere.
+  const canSavedCostings = isPro || isAdvanced;
+  const savedLimit = isAdvanced ? Infinity : (isPro ? 5 : 0);
+  const canBatch = isAdvanced;
+  const canMultiLanguage = isAdvanced;
+  const canMultiCurrency = isAdvanced;
+  const canUseAdvanced = isAdvanced;
 
   const openUpgrade = useCallback((feature: AdvancedFeature) => setUpgradeFeature(feature), []);
   const closeUpgrade = useCallback(() => setUpgradeFeature(null), []);
@@ -137,7 +155,7 @@ export function RevealProvider({ children }: { children: React.ReactNode }) {
     try { pending = localStorage.getItem(PENDING_REVEAL_KEY) === '1'; } catch {}
     if (!pending) return;
     try { localStorage.removeItem(PENDING_REVEAL_KEY); } catch {}
-    if (plan === 'pro') setRevealed(true);
+    if (unlimited) setRevealed(true);
     else if (credits > 0) void consumeAndReveal();
   }, [user, profileLoading, credits, plan, consumeAndReveal]);
 
@@ -152,6 +170,14 @@ export function RevealProvider({ children }: { children: React.ReactNode }) {
     outOfCredits: authed && !unlimited && credits !== null && credits <= 0,
     reveal,
     reportSignature,
+    isFree,
+    isPro,
+    isAdvanced,
+    canSavedCostings,
+    savedLimit,
+    canBatch,
+    canMultiLanguage,
+    canMultiCurrency,
     canUseAdvanced,
     upgradeFeature,
     openUpgrade,
@@ -166,6 +192,9 @@ const NOOP: RevealContextValue = {
   loading: false, authed: false, plan: 'free', unlimited: false, credits: null,
   revealed: true, gated: false, outOfCredits: false,
   reveal: () => {}, reportSignature: () => {},
+  isFree: false, isPro: false, isAdvanced: true,
+  canSavedCostings: true, savedLimit: Infinity,
+  canBatch: true, canMultiLanguage: true, canMultiCurrency: true,
   canUseAdvanced: true, upgradeFeature: null, openUpgrade: () => {}, closeUpgrade: () => {},
 };
 
