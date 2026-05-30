@@ -2,9 +2,12 @@
 
 import React from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Menu, X } from 'lucide-react';
+import { Menu, X, Calculator, Settings, CreditCard, Sparkles, LogOut } from 'lucide-react';
 import { useCtaTarget } from '@/components/use-cta';
+import { useAccount } from '@/hooks/use-account';
+import AccountMenu, { Avatar } from '@/components/AccountMenu';
 
 const SPRING_UI = { type: 'spring', stiffness: 400, damping: 34 } as const;
 
@@ -66,7 +69,15 @@ export function GradDivider() {
 /* ─── Shared Navbar ───────────────────────────────────────────── */
 export function SiteNavbar() {
   const [open, setOpen] = React.useState(false);
-  const cta = useCtaTarget();
+  const router = useRouter();
+  const account = useAccount();
+
+  const handleMobileLogout = async () => {
+    setOpen(false);
+    await account.signOut();
+    router.push('/');
+    router.refresh();
+  };
 
   const NAV_LINKS = [
     { label: 'Features', href: '/#features' },
@@ -94,25 +105,33 @@ export function SiteNavbar() {
                 {label}
               </a>
             ))}
-            <div className="h-4 w-px bg-slate-200" />
-            <Link
-              href="/login"
-              className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors duration-150"
-            >
-              Log in
-            </Link>
-            <motion.div whileHover={{ scale: 1.025 }} whileTap={{ scale: 0.965 }} transition={SPRING_UI}>
-              <Link
-                href={cta.href}
-                className="h-9 px-4 inline-flex items-center justify-center rounded-[9px] text-white text-[13px] font-semibold"
-                style={{
-                  background: 'linear-gradient(135deg, #10B981, #0F766E)',
-                  boxShadow: '0 1px 2px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.12)',
-                }}
-              >
-                {cta.label}
-              </Link>
-            </motion.div>
+            {account.loading ? (
+              <div className="h-9 w-9 rounded-full bg-slate-100 animate-pulse" aria-hidden />
+            ) : account.authed ? (
+              <AccountMenu account={account} />
+            ) : (
+              <>
+                <div className="h-4 w-px bg-slate-200" />
+                <Link
+                  href="/login"
+                  className="text-[13px] font-medium text-slate-500 hover:text-slate-900 transition-colors duration-150"
+                >
+                  Log in
+                </Link>
+                <motion.div whileHover={{ scale: 1.025 }} whileTap={{ scale: 0.965 }} transition={SPRING_UI}>
+                  <Link
+                    href="/signup"
+                    className="h-9 px-4 inline-flex items-center justify-center rounded-[9px] text-white text-[13px] font-semibold"
+                    style={{
+                      background: 'linear-gradient(135deg, #10B981, #0F766E)',
+                      boxShadow: '0 1px 2px rgba(0,0,0,0.14), inset 0 1px 0 rgba(255,255,255,0.12)',
+                    }}
+                  >
+                    Sign Up
+                  </Link>
+                </motion.div>
+              </>
+            )}
           </div>
 
           {/* Mobile toggle */}
@@ -141,19 +160,55 @@ export function SiteNavbar() {
             </a>
           ))}
           <div className="h-px w-full bg-slate-100 my-1" />
-          <Link
-            href="/login"
-            className="min-h-[44px] flex items-center text-[14px] font-medium text-slate-700"
-          >
-            Log in
-          </Link>
-          <Link
-            href={cta.href}
-            className="mt-1 w-full min-h-[48px] inline-flex items-center justify-center rounded-xl text-white text-[14px] font-semibold"
-            style={{ background: 'linear-gradient(135deg, #10B981, #0F766E)' }}
-          >
-            {cta.label}
-          </Link>
+          {account.loading ? null : account.authed ? (
+            <>
+              <div className="flex items-center gap-3 py-2">
+                <Avatar initials={account.initials} size={40} />
+                <div className="min-w-0">
+                  <p className="text-[14px] font-semibold text-slate-900 truncate">{account.fullName || 'Your account'}</p>
+                  <p className="text-[12px] text-slate-400 truncate">{account.email}</p>
+                </div>
+              </div>
+              <div className="flex items-center justify-between rounded-xl bg-slate-50 px-3 py-2 mb-1">
+                <span className="inline-flex items-center gap-1.5 text-[12.5px] font-semibold text-teal-700">
+                  <Sparkles size={13} /> {account.planLabel} plan
+                </span>
+                <span className="text-[12.5px] text-slate-500">
+                  <span className="font-semibold text-slate-700">{account.unlimited ? 'Unlimited' : (account.credits ?? '-')}</span> {account.unlimited ? 'reveals' : 'credits'}
+                </span>
+              </div>
+              <Link href="/app" onClick={() => setOpen(false)} className="min-h-[44px] flex items-center gap-2.5 text-[14px] font-medium text-slate-700">
+                <Calculator size={16} className="text-slate-400" /> Continue to Calculator
+              </Link>
+              <Link href="/account" onClick={() => setOpen(false)} className="min-h-[44px] flex items-center gap-2.5 text-[14px] font-medium text-slate-700">
+                <Settings size={16} className="text-slate-400" /> Account Settings
+              </Link>
+              <Link href="/#pricing" onClick={() => setOpen(false)} className="min-h-[44px] flex items-center gap-2.5 text-[14px] font-medium text-slate-700">
+                <CreditCard size={16} className="text-slate-400" /> Subscription &amp; Plan
+              </Link>
+              <button onClick={handleMobileLogout} className="min-h-[44px] flex items-center gap-2.5 text-[14px] font-medium text-red-600">
+                <LogOut size={16} /> Log Out
+              </button>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login"
+                onClick={() => setOpen(false)}
+                className="min-h-[44px] flex items-center text-[14px] font-medium text-slate-700"
+              >
+                Log in
+              </Link>
+              <Link
+                href="/signup"
+                onClick={() => setOpen(false)}
+                className="mt-1 w-full min-h-[48px] inline-flex items-center justify-center rounded-xl text-white text-[14px] font-semibold"
+                style={{ background: 'linear-gradient(135deg, #10B981, #0F766E)' }}
+              >
+                Sign Up
+              </Link>
+            </>
+          )}
         </div>
       )}
     </nav>
