@@ -27,6 +27,7 @@ import { createClient } from '@/lib/supabase/client';
  */
 
 export type PlanType = 'free' | 'pro';
+export type AdvancedFeature = 'batch' | 'saved';
 export const PENDING_REVEAL_KEY = 'costix_pending_reveal';
 
 interface RevealContextValue {
@@ -40,6 +41,11 @@ interface RevealContextValue {
   outOfCredits: boolean;
   reveal: () => void;
   reportSignature: (sig: string) => void;
+  // Advanced (paid) feature gating — Batch + Saved are paid-only.
+  canUseAdvanced: boolean;                 // true → unrestricted access to Batch/Saved
+  upgradeFeature: AdvancedFeature | null;  // which locked feature triggered the upgrade modal
+  openUpgrade: (feature: AdvancedFeature) => void;
+  closeUpgrade: () => void;
 }
 
 const RevealContext = createContext<RevealContextValue | null>(null);
@@ -52,10 +58,16 @@ export function RevealProvider({ children }: { children: React.ReactNode }) {
   const [credits, setCredits] = useState<number | null>(null);
   const [profileLoading, setProfileLoading] = useState(false);
   const [revealed, setRevealed] = useState(false);
+  const [upgradeFeature, setUpgradeFeature] = useState<AdvancedFeature | null>(null);
   const sigRef = useRef<string | null>(null);
 
   const authed = !!user;
   const unlimited = plan === 'pro';
+  // Any non-free plan unlocks the Advanced (paid) features.
+  const canUseAdvanced = authed && plan !== 'free';
+
+  const openUpgrade = useCallback((feature: AdvancedFeature) => setUpgradeFeature(feature), []);
+  const closeUpgrade = useCallback(() => setUpgradeFeature(null), []);
 
   // Load the profile (plan + credits) whenever the auth user changes.
   useEffect(() => {
@@ -138,6 +150,10 @@ export function RevealProvider({ children }: { children: React.ReactNode }) {
     outOfCredits: authed && !unlimited && credits !== null && credits <= 0,
     reveal,
     reportSignature,
+    canUseAdvanced,
+    upgradeFeature,
+    openUpgrade,
+    closeUpgrade,
   };
 
   return <RevealContext.Provider value={value}>{children}</RevealContext.Provider>;
@@ -148,6 +164,7 @@ const NOOP: RevealContextValue = {
   loading: false, authed: false, plan: 'free', unlimited: false, credits: null,
   revealed: true, gated: false, outOfCredits: false,
   reveal: () => {}, reportSignature: () => {},
+  canUseAdvanced: true, upgradeFeature: null, openUpgrade: () => {}, closeUpgrade: () => {},
 };
 
 export function useReveal(): RevealContextValue {
