@@ -15,6 +15,7 @@ import {
   Package,
   Zap,
   TrendingUp,
+  TrendingDown,
   ArrowRight,
   ScanLine,
   Settings,
@@ -300,93 +301,73 @@ function AnimBar({ pct, color }: { pct: number; color: string }) {
   );
 }
 
-/* ─── Costing scenarios (all values mathematically verified) ──── */
-// cost = materials + $1.80 labor + $0.60 elec; price = cost ÷ 0.65 (35% margin target)
-interface Scenario {
-  fabric: string; materials: string;
-  costUnit: string; price: string; profit: string; margin: string;
+/* ─── Hero costing demo — auto-playing 5-step simulation ──────── */
+// Lightweight & isolated: a small frame array drives smooth value
+// fades (AnimVal) and bar widths (AnimBar). No giant timelines, no
+// coupling to the real calculator. Each frame is the end-state of one
+// user action, so the loop reads as a person testing pricing live.
+//
+// Fixed-cost model so volume changes move cost/unit realistically:
+//   cost/unit = materials/unit + (Labor $900 + Electricity $300) ÷ units
+//   suggested price = cost/unit ÷ (1 − target margin)
+interface Frame {
+  caption: string;
+  units: string;
+  imported: boolean;
+  fabric: string;       // landed fabric price / unit
+  materials: string;    // materials / unit
+  target: number;       // target margin %
+  costUnit: string;
+  totalCost: string;
+  price: string;
+  profit: string;
+  margin: string;       // achieved margin
+  healthy: boolean;
   matPct: number; laborPct: number; elecPct: number;
 }
-const SCENARIOS: Scenario[] = [
-  // Baseline: fabric $3.50 + thread $0.70 → mat $4.20 → cost $6.60 → price $10.15
-  { fabric:'$3.50', materials:'$4.20', costUnit:'$6.60', price:'$10.15', profit:'$3.55', margin:'34.9%', matPct:64, laborPct:27, elecPct:9  },
-  // Spike:    fabric $4.10 + thread $0.70 → mat $4.80 → cost $7.20 → price $11.08
-  { fabric:'$4.10', materials:'$4.80', costUnit:'$7.20', price:'$11.08', profit:'$3.88', margin:'35.0%', matPct:67, laborPct:25, elecPct:8  },
-  // Adjusted: fabric $3.70 + thread $0.70 → mat $4.40 → cost $6.80 → price $10.46
-  { fabric:'$3.70', materials:'$4.40', costUnit:'$6.80', price:'$10.46', profit:'$3.66', margin:'35.0%', matPct:65, laborPct:26, elecPct:9  },
+
+const FRAMES: Frame[] = [
+  { caption: 'Live costing',             units: '500', imported: false, fabric: '$3.50', materials: '$4.20', target: 35, costUnit: '$6.60', totalCost: '$3,300', price: '$10.15', profit: '$3.55', margin: '35%', healthy: true,  matPct: 64, laborPct: 27, elecPct: 9 },
+  { caption: 'Cotton price ↑',           units: '500', imported: false, fabric: '$4.10', materials: '$4.80', target: 35, costUnit: '$7.20', totalCost: '$3,600', price: '$11.08', profit: '$3.88', margin: '35%', healthy: true,  matPct: 67, laborPct: 25, elecPct: 8 },
+  { caption: 'Units 500 → 800',          units: '800', imported: false, fabric: '$4.10', materials: '$4.80', target: 35, costUnit: '$6.30', totalCost: '$5,040', price: '$9.69',  profit: '$3.39', margin: '35%', healthy: true,  matPct: 76, laborPct: 18, elecPct: 6 },
+  { caption: 'Target margin → 42%',      units: '800', imported: false, fabric: '$4.10', materials: '$4.80', target: 42, costUnit: '$6.30', totalCost: '$5,040', price: '$10.86', profit: '$4.56', margin: '42%', healthy: true,  matPct: 76, laborPct: 18, elecPct: 6 },
+  { caption: 'Imported — landed cost ↑', units: '800', imported: true,  fabric: '$5.50', materials: '$6.20', target: 42, costUnit: '$7.70', totalCost: '$6,160', price: '$10.86', profit: '$3.16', margin: '29%', healthy: false, matPct: 80, laborPct: 15, elecPct: 5 },
 ];
 
-/* ─── Live App Preview — operational animation loop ──────────── */
 const LiveCalcPreview = () => {
-  const [scIdx,     setScIdx]     = React.useState(0); // drives left-panel inputs
-  const [sumIdx,    setSumIdx]    = React.useState(0); // drives right-panel summary (lags ~720ms)
-  const [activeTab, setActiveTab] = React.useState(0); // 0=Quick Cost 1=Batch 2=Saved
+  const [inpIdx, setInpIdx] = React.useState(0); // input panel
+  const [sumIdx, setSumIdx] = React.useState(0); // summary trails inputs ~420ms
 
-  // Passive operational loop — simulates a user adjusting material costs
+  // Auto-play loop — advance one frame; summary recalculates with a stagger
   React.useEffect(() => {
     let dead = false;
-    const wait = (ms: number) => new Promise<void>(r => setTimeout(r, ms));
-
-    const run = async () => {
-      while (!dead) {
-        // ── Fabric price rises ────────────────────────────
-        await wait(5500);  if (dead) break;
-        setScIdx(1);                        // input panel updates first
-        await wait(720);   if (dead) break;
-        setSumIdx(1);                       // summary recalculates with stagger
-
-        // ── Fabric adjusts down ───────────────────────────
-        await wait(6200);  if (dead) break;
-        setScIdx(2);
-        await wait(720);   if (dead) break;
-        setSumIdx(2);
-
-        // ── Brief Batch tab peek ──────────────────────────
-        await wait(4000);  if (dead) break;
-        setActiveTab(1);
-        await wait(2600);  if (dead) break;
-        setActiveTab(0);
-
-        // ── Returns to baseline ───────────────────────────
-        await wait(2200);  if (dead) break;
-        setScIdx(0);
-        await wait(720);   if (dead) break;
-        setSumIdx(0);
-
-        await wait(3500); // rest before next cycle
-      }
-    };
-
-    run();
-    return () => { dead = true; };
+    let lag: ReturnType<typeof setTimeout>;
+    const iv = setInterval(() => {
+      if (dead) return;
+      setInpIdx(i => {
+        const next = (i + 1) % FRAMES.length;
+        lag = setTimeout(() => { if (!dead) setSumIdx(next); }, 420);
+        return next;
+      });
+    }, 3300);
+    return () => { dead = true; clearInterval(iv); clearTimeout(lag); };
   }, []);
 
-  const inp = SCENARIOS[scIdx];
-  const sum = SCENARIOS[sumIdx];
+  const inp = FRAMES[inpIdx];
+  const sum = FRAMES[sumIdx];
   const TABS = ['Quick Cost', 'Batch', 'Saved'];
-
-  // Batch view: 500 units × current scenario costs
-  const fmt = (n: number) =>
-    n.toLocaleString('en-US', { style: 'currency', currency: 'USD' });
-  const batchMat   = fmt(500 * parseFloat(inp.materials.replace('$', '')));
-  const batchTotal = fmt(500 * parseFloat(inp.costUnit.replace('$', '')));
+  const healthColor = sum.healthy ? 'text-emerald-600' : 'text-amber-600';
 
   const summaryRows: [string, string, string][] = [
-    ['Cost / unit',   sum.costUnit, 'text-slate-700'],
-    ['Profit / unit', sum.profit,   'text-emerald-600'],
-    ['Margin',        sum.margin,   'text-emerald-600'],
+    ['Cost / unit',  sum.costUnit,  'text-slate-700'],
+    ['Total cost',   sum.totalCost, 'text-slate-700'],
+    ['Gross profit', sum.profit,    healthColor],
+    ['Margin',       sum.margin,    healthColor],
   ];
   const costSplit: [string, number, string][] = [
     ['Materials',   sum.matPct,   '#0F766E'],
     ['Labor',       sum.laborPct, '#10B981'],
     ['Electricity', sum.elecPct,  '#6EE7B7'],
-  ];
-  const batchRows: [string, string, string][] = [
-    ['Materials / batch',   batchMat,     'text-slate-700'],
-    ['Labor / batch',       '$900.00',    'text-slate-700'],
-    ['Electricity / batch', '$300.00',    'text-slate-700'],
-    ['Cost / unit',         inp.costUnit, 'text-teal-700'],
-    ['Total run cost',      batchTotal,   'text-slate-900'],
   ];
 
   return (
@@ -405,11 +386,7 @@ const LiveCalcPreview = () => {
             <div
               key={label}
               className="text-[11px] px-2.5 py-1 rounded-full font-medium"
-              style={{
-                background: i === activeTab ? '#0F766E' : '#f1f5f9',
-                color:      i === activeTab ? 'white'   : '#64748b',
-                transition: 'background 0.32s ease, color 0.32s ease',
-              }}
+              style={{ background: i === 0 ? '#0F766E' : '#f1f5f9', color: i === 0 ? 'white' : '#64748b' }}
             >
               {label}
             </div>
@@ -417,141 +394,124 @@ const LiveCalcPreview = () => {
         </div>
       </div>
 
-      {/* ── Quick Cost tab ─────────────────────────────────────── */}
-      {activeTab === 0 && (
-        <div className="grid grid-cols-5">
-          {/* Left — inputs */}
-          <div className="col-span-3 border-r border-slate-100 p-4 space-y-2.5">
-            <div>
-              <div className="text-[9.5px] uppercase tracking-wider text-slate-400 mb-1 font-medium">Product</div>
-              <div className="rounded-lg border border-slate-200 px-3 py-2 text-[12px] text-slate-700 bg-slate-50 font-medium">
-                Cotton T-shirt
-              </div>
-            </div>
+      {/* Action caption — fixed height so steps never shift layout */}
+      <div className="flex items-center gap-1.5 px-4 h-7 border-b border-slate-100 bg-slate-50/50">
+        <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+        <AnimVal val={inp.caption} className="text-[10px] font-medium text-slate-500" />
+      </div>
 
-            {/* Materials — animated fabric price */}
-            <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Package size={10} className="text-teal-700" />
-                <span className="text-[10px] font-semibold text-slate-700">Materials</span>
-                <AnimVal val={inp.materials} className="ml-auto text-[10px] font-semibold text-slate-900" />
-              </div>
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-[9.5px] text-slate-500">Cotton fabric</span>
-                <AnimVal val={inp.fabric} className="text-[9.5px] font-medium text-slate-700" />
-              </div>
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-[9.5px] text-slate-500">Thread</span>
-                <span className="text-[9.5px] font-medium text-slate-700">$0.70</span>
-              </div>
+      <div className="grid grid-cols-5">
+        {/* Left — inputs */}
+        <div className="col-span-3 border-r border-slate-100 p-4 space-y-2.5">
+          {/* Product + units */}
+          <div className="flex items-center gap-2">
+            <div className="flex-1 rounded-lg border border-slate-200 px-3 py-2 text-[12px] text-slate-700 bg-slate-50 font-medium">
+              Cotton T-shirt
             </div>
-
-            {/* Labor — static */}
-            <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
-              <div className="flex items-center gap-1.5 mb-1">
-                <Settings2 size={10} className="text-teal-700" />
-                <span className="text-[10px] font-semibold text-slate-700">Labor</span>
-                <span className="ml-auto text-[10px] font-semibold text-slate-900">$1.80</span>
-              </div>
-              <div className="flex justify-between items-center py-0.5">
-                <span className="text-[9.5px] text-slate-500">Seamstress · 0.5 hr</span>
-                <span className="text-[9.5px] font-medium text-slate-700">$1.80</span>
-              </div>
-            </div>
-
-            {/* Electricity — static */}
-            <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
-              <div className="flex items-center gap-1.5">
-                <Zap size={10} className="text-teal-700" />
-                <span className="text-[10px] font-semibold text-slate-700">Electricity</span>
-                <span className="ml-auto text-[10px] font-semibold text-slate-900">$0.60</span>
-              </div>
-            </div>
-
-            {/* Margin target */}
-            <div className="rounded-xl border border-teal-100 bg-teal-50/40 p-2.5">
-              <div className="flex items-center gap-1.5 mb-1.5">
-                <TrendingUp size={10} className="text-teal-700" />
-                <span className="text-[10px] font-semibold text-teal-800">Target margin — 35%</span>
-              </div>
-              <div className="h-1.5 rounded-full bg-teal-100">
-                <div className="h-1.5 rounded-full" style={{ width: '35%', background: '#0F766E' }} />
-              </div>
+            <div className="rounded-lg border border-slate-200 px-2.5 py-2 text-[11px] text-slate-600 bg-white font-semibold whitespace-nowrap">
+              <AnimVal val={inp.units} className="text-teal-700" /> units
             </div>
           </div>
 
-          {/* Right — summary (lagged recalculation) */}
-          <div className="col-span-2 p-4 space-y-2.5">
-            <div className="text-[9.5px] uppercase tracking-wider text-slate-400 font-medium">Summary</div>
-
-            {/* Suggested price card */}
-            <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, #0F766E, #10B981)' }}>
-              <div className="text-[9.5px] text-white/70 mb-0.5">Suggested price</div>
-              <AnimVal val={sum.price} className="text-xl font-bold text-white block" />
-              <div className="text-[9.5px] text-white/70 mt-0.5">per unit</div>
+          {/* Materials — Local/Imported toggle + animated fabric price */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <Package size={10} className="text-teal-700" />
+              <span className="text-[10px] font-semibold text-slate-700">Materials</span>
+              <AnimVal val={inp.materials} className="ml-auto text-[10px] font-semibold text-slate-900" />
+              <span className="text-[8.5px] text-slate-400">/unit</span>
             </div>
-
-            {/* Summary rows */}
-            <div>
-              {summaryRows.map(([l, v, c]) => (
-                <div key={l} className="flex justify-between items-center py-1.5 border-b border-slate-100 last:border-0">
-                  <span className="text-[9.5px] text-slate-500">{l}</span>
-                  <AnimVal val={v} className={`text-[10px] font-semibold ${c}`} />
-                </div>
-              ))}
+            <div className="flex p-0.5 rounded-lg bg-slate-100 mb-1.5 text-[9px] font-semibold">
+              <div className="flex-1 text-center py-1 rounded-md" style={{ background: inp.imported ? 'transparent' : 'white', color: inp.imported ? '#94a3b8' : '#0F766E', boxShadow: inp.imported ? 'none' : '0 1px 2px rgba(0,0,0,0.06)', transition: 'all 0.3s ease' }}>Local</div>
+              <div className="flex-1 text-center py-1 rounded-md" style={{ background: inp.imported ? 'white' : 'transparent', color: inp.imported ? '#0F766E' : '#94a3b8', boxShadow: inp.imported ? '0 1px 2px rgba(0,0,0,0.06)' : 'none', transition: 'all 0.3s ease' }}>Imported</div>
             </div>
-
-            {/* Cost split bars */}
-            <div>
-              <div className="text-[9.5px] uppercase tracking-wider text-slate-400 font-medium mb-1.5">Cost split</div>
-              {costSplit.map(([l, p, c]) => (
-                <div key={l} className="mb-1.5">
-                  <div className="flex justify-between mb-0.5">
-                    <span className="text-[9.5px] text-slate-500">{l}</span>
-                    <AnimVal val={`${p}%`} className="text-[9.5px] font-medium text-slate-700" />
-                  </div>
-                  <div className="h-1 rounded-full bg-slate-100">
-                    <AnimBar pct={p} color={c} />
-                  </div>
-                </div>
-              ))}
+            <div className="flex justify-between items-center py-0.5">
+              <span className="text-[9.5px] text-slate-500">Cotton fabric{inp.imported ? ' · landed' : ''}</span>
+              <AnimVal val={inp.fabric} className="text-[9.5px] font-medium text-slate-700" />
             </div>
+            <div className="flex justify-between items-center py-0.5">
+              <span className="text-[9.5px] text-slate-500">Thread</span>
+              <span className="text-[9.5px] font-medium text-slate-700">$0.70</span>
+            </div>
+          </div>
 
-            {/* Export buttons */}
-            <div className="flex gap-1.5 pt-0.5">
-              <div className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[9.5px] font-semibold text-white" style={{ background: '#0F766E' }}>
-                <FileSpreadsheet size={9} /> PDF
-              </div>
-              <div className="flex-1 flex items-center justify-center gap-1 rounded-lg py-1.5 text-[9.5px] font-semibold border border-slate-200 text-slate-600 bg-slate-50">
-                <BarChart3 size={9} /> XLSX
-              </div>
+          {/* Fixed costs / batch — static */}
+          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-2.5">
+            <div className="flex items-center gap-1.5 mb-1">
+              <Settings2 size={10} className="text-teal-700" />
+              <span className="text-[10px] font-semibold text-slate-700">Fixed costs</span>
+              <span className="ml-auto text-[8.5px] text-slate-400">/batch</span>
+            </div>
+            <div className="flex justify-between items-center py-0.5">
+              <span className="text-[9.5px] text-slate-500">Labor</span>
+              <span className="text-[9.5px] font-medium text-slate-700">$900</span>
+            </div>
+            <div className="flex justify-between items-center py-0.5">
+              <span className="text-[9.5px] text-slate-500">Electricity</span>
+              <span className="text-[9.5px] font-medium text-slate-700">$300</span>
+            </div>
+          </div>
+
+          {/* Target margin — animated */}
+          <div className="rounded-xl border border-teal-100 bg-teal-50/40 p-2.5">
+            <div className="flex items-center gap-1.5 mb-1.5">
+              <TrendingUp size={10} className="text-teal-700" />
+              <span className="text-[10px] font-semibold text-teal-800">Target margin</span>
+              <AnimVal val={`${inp.target}%`} className="ml-auto text-[10px] font-bold text-teal-800" />
+            </div>
+            <div className="h-1.5 rounded-full bg-teal-100">
+              <AnimBar pct={inp.target} color="#0F766E" />
             </div>
           </div>
         </div>
-      )}
 
-      {/* ── Batch tab ──────────────────────────────────────────── */}
-      {activeTab === 1 && (
-        <div className="p-4">
-          <div className="text-[9.5px] uppercase tracking-wider text-slate-400 mb-2 font-medium">Batch Run</div>
-          <div className="rounded-lg border border-slate-200 px-3 py-2 text-[12px] text-slate-700 bg-slate-50 font-medium mb-3">
-            Cotton T-shirt · 500 units
+        {/* Right — summary (lagged recalculation) */}
+        <div className="col-span-2 p-4 space-y-2.5">
+          <div className="text-[9.5px] uppercase tracking-wider text-slate-400 font-medium">Summary</div>
+
+          {/* Suggested price */}
+          <div className="rounded-xl p-3 text-center" style={{ background: 'linear-gradient(135deg, #0F766E, #10B981)' }}>
+            <div className="text-[9.5px] text-white/70 mb-0.5">Suggested price</div>
+            <AnimVal val={sum.price} className="text-xl font-bold text-white block" />
+            <div className="text-[9.5px] text-white/70 mt-0.5">per unit</div>
           </div>
-          <div className="rounded-xl border border-slate-100 bg-slate-50/60 p-3">
-            {batchRows.map(([l, v, c]) => (
+
+          {/* Margin health badge */}
+          <div
+            className="flex items-center justify-center gap-1 rounded-lg py-1.5 text-[10px] font-semibold"
+            style={{ background: sum.healthy ? '#ecfdf5' : '#fffbeb', color: sum.healthy ? '#047857' : '#b45309', transition: 'background 0.4s ease, color 0.4s ease' }}
+          >
+            {sum.healthy ? <TrendingUp size={11} /> : <TrendingDown size={11} />}
+            <AnimVal val={sum.healthy ? 'Healthy margin' : 'Below target'} />
+          </div>
+
+          {/* Summary rows */}
+          <div>
+            {summaryRows.map(([l, v, c]) => (
               <div key={l} className="flex justify-between items-center py-1.5 border-b border-slate-100 last:border-0">
                 <span className="text-[9.5px] text-slate-500">{l}</span>
-                <span className={`text-[10px] font-semibold ${c}`}>{v}</span>
+                <AnimVal val={v} className={`text-[10px] font-semibold ${c}`} />
               </div>
             ))}
           </div>
-          <div className="mt-3 rounded-xl border border-teal-100 bg-teal-50/40 p-2.5">
-            <span className="text-[9.5px] font-medium text-teal-800">
-              Add run sizes to compare cost per unit at different production volumes.
-            </span>
+
+          {/* Cost split */}
+          <div>
+            <div className="text-[9.5px] uppercase tracking-wider text-slate-400 font-medium mb-1.5">Cost split</div>
+            {costSplit.map(([l, p, c]) => (
+              <div key={l} className="mb-1.5">
+                <div className="flex justify-between mb-0.5">
+                  <span className="text-[9.5px] text-slate-500">{l}</span>
+                  <AnimVal val={`${p}%`} className="text-[9.5px] font-medium text-slate-700" />
+                </div>
+                <div className="h-1 rounded-full bg-slate-100">
+                  <AnimBar pct={p} color={c} />
+                </div>
+              </div>
+            ))}
           </div>
         </div>
-      )}
+      </div>
     </div>
   );
 };
